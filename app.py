@@ -50,6 +50,10 @@ with upload_filter_section:
     if uploaded_file is not None:
         with column_filter:            
                 try:
+                    # Store excel shortterm in AWS for debugging purposes
+                    if uploaded_file.name not in st.session_state:
+                        custom_functions.upload_to_aws(uploaded_file)
+
                     # load excel, filter our relevant tabs and columns, merge all in one dataframe
                     df_vInfo, df_vCPU, df_vMemory, df_vDisk, df_vPartition, df_vHosts, df_vDataStore = custom_functions.get_data_from_excel(uploaded_file)            
 
@@ -59,12 +63,10 @@ with upload_filter_section:
                         default=sorted(df_vHosts["Cluster"].unique())
                     )
 
-                    # Store excel shortterm in AWS for debugging purposes
                     if uploaded_file.name not in st.session_state:
-                        custom_functions.upload_to_aws(uploaded_file)
-                        slack_string = 'RVTools: '+str(df_vInfo['Datacenter'].nunique())+' Datacenter,'+str(df_vInfo['Cluster'].nunique())+' Cluster, '+ str(df_vInfo['Host'].nunique())+' Host und '+str(df_vInfo.shape[0])+' VMs.'
-                        custom_functions.send_slack_message(slack_string)
-                        
+                        slack_string = 'RVTools: '+str(df_vInfo['Cluster'].nunique())+' Cluster, '+str(df_vInfo['Host'].nunique())+' Host, '+str(df_vInfo.shape[0])+' VMs.'
+                        custom_functions.send_slack_message_and_set_session_state(slack_string,uploaded_file)
+                    
                     uploaded_file_valid = True
                     st.success("Die RVTools Auswertung wurde erfolgreich hochgeladen. Filtern Sie bei Bedarf nach einzelnen Clustern.")
                     
@@ -91,7 +93,8 @@ with upload_filter_section:
                     analysis_section.markdown("---")
                     analysis_section.markdown("Im folgenden die genaue Fehlermeldung für ein Troubleshooting:")
                     analysis_section.exception(e)
-                    custom_functions.send_slack_message('RVTools ERROR: '+str(e.args))
+                    st.session_state[uploaded_file.name] = True 
+                    custom_functions.send_slack_message_and_set_session_state('RVTools ERROR: '+str(e.args),uploaded_file)
 
 if uploaded_file is not None and uploaded_file_valid is True and len(vCluster_selected) != 0:
 

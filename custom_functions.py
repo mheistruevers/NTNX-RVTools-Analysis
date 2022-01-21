@@ -73,7 +73,7 @@ def upload_to_aws(data):
     
     try:
         s3_client.put_object(Bucket=st.secrets["s3_bucket_name"], Body=data.getvalue(), Key=current_datetime_as_filename)
-        st.session_state[data.name] = True # store uploaded filename as sessionstate variable in order to block reupload of same file
+        #st.session_state[data.name] = True # store uploaded filename as sessionstate variable in order to block reupload of same file
         return True
     except FileNotFoundError:
         return False
@@ -552,18 +552,11 @@ def generate_memory_bar_chart(df_vMemory_filtered):
     return bar_chart, bar_chart_config
 
 # Send Slack Message
-def send_slack_message(payload):
-    """Send a Slack message to a channel via a webhook. 
-    
-    Args:
-        payload (dict): Dictionary containing Slack message, i.e. {"text": "This is a test"}
-        webhook (str): Full Slack webhook URL for your chosen channel. 
-    
-    Returns:
-        HTTP response code, i.e. <Response [503]>
-    """
-
+# NO cache function!
+def send_slack_message_and_set_session_state(payload, uploaded_file):
+    # store uploaded filename as sessionstate variable in order to block
+    st.session_state[uploaded_file.name] = True  
+    # Send a Slack message to a channel via a webhook. 
     webhook = aws_access_key_id=st.secrets["slack_webhook_url"]
     payload = {"text": payload}
-
     requests.post(webhook, json.dumps(payload))
