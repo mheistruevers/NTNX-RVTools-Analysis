@@ -6,7 +6,7 @@ import plotly.express as px  # pip install plotly-express
 import plotly.io as pio
 import plotly.graph_objects as go
 from PIL import Image
-import boto3
+#import boto3
 from datetime import datetime
 from botocore.exceptions import ClientError
 import requests
@@ -65,18 +65,18 @@ def generate_donut_charts(usage_percentage):
     return donut_chart, donut_chart_config
 
 # Upload File to AWS for troubleshooting
-def upload_to_aws(data):
-    s3_client = boto3.client('s3', aws_access_key_id=st.secrets["s3_access_key_id"],
-                      aws_secret_access_key=st.secrets["s3_secret_access_key"])
-
-    current_datetime_as_filename = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")+".xlsx"
-    
-    try:
-        s3_client.put_object(Bucket=st.secrets["s3_bucket_name"], Body=data.getvalue(), Key=current_datetime_as_filename)
-        #st.session_state[data.name] = True # store uploaded filename as sessionstate variable in order to block reupload of same file
-        return True
-    except FileNotFoundError:
-        return False
+#def upload_to_aws(data):
+#    s3_client = boto3.client('s3', aws_access_key_id=st.secrets["s3_access_key_id"],
+#                      aws_secret_access_key=st.secrets["s3_secret_access_key"])
+#
+#    current_datetime_as_filename = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")+".xlsx"
+#    
+#    try:
+#        s3_client.put_object(Bucket=st.secrets["s3_bucket_name"], Body=data.getvalue(), Key=current_datetime_as_filename)
+#        #st.session_state[data.name] = True # store uploaded filename as sessionstate variable in order to block reupload of same file
+#        return True
+#    except FileNotFoundError:
+#        return False
 
 # Generate CPU information for vCluster section
 @st.cache(allow_output_mutation=True)
