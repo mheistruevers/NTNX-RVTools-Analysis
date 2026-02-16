@@ -51,6 +51,15 @@ def get_data_from_excel(uploaded_file):
     df_vHosts = df.parse('vHost', usecols=vHosts_cols_to_use)
     df_vDataStore = df.parse('vDatastore', usecols=vDatastore_cols_to_use)
 
+    # Normalisiere leere Cluster-Einträge (Standalone Hosts)
+    # Dies verhindert Fehler beim Filtern und ermöglicht separate Auswertung
+    df_vHosts['Cluster'] = df_vHosts['Cluster'].fillna('[Standalone Hosts]')
+    df_vInfo['Cluster'] = df_vInfo['Cluster'].fillna('[Standalone Hosts]')
+    df_vCPU['Cluster'] = df_vCPU['Cluster'].fillna('[Standalone Hosts]')
+    df_vMemory['Cluster'] = df_vMemory['Cluster'].fillna('[Standalone Hosts]')
+    df_vDisk['Cluster'] = df_vDisk['Cluster'].fillna('[Standalone Hosts]')
+    df_vPartition['Cluster'] = df_vPartition['Cluster'].fillna('[Standalone Hosts]')
+
     return df_vInfo, df_vCPU, df_vMemory, df_vDisk, df_vPartition, df_vHosts, df_vDataStore
 
 # Generate pCPU, pMemory & vDatastore information for vCluster section
@@ -560,3 +569,27 @@ def send_slack_message_and_set_session_state(payload, uploaded_file):
     webhook = aws_access_key_id=st.secrets["slack_webhook_url"]
     payload = {"text": payload}
     requests.post(webhook, json.dumps(payload))
+
+
+# Check for Standalone Hosts (Hosts without Cluster assignment)
+def check_standalone_hosts(df_vHosts):
+    """
+    Prüft ob Standalone-Hosts (ohne Cluster-Zuordnung) vorhanden sind.
+
+    Args:
+        df_vHosts: DataFrame mit vHost-Daten (ORIGINAL, vor fillna)
+
+    Returns:
+        tuple: (has_standalone_hosts: bool, standalone_hosts_info: list of tuples)
+               Liste enthält (Hostname, VM-Anzahl) für jeden Standalone-Host
+    """
+    # Prüfe auf leere oder NaN Cluster-Einträge (vor der Normalisierung)
+    standalone_mask = df_vHosts['Cluster'].isna() | (df_vHosts['Cluster'] == '')
+
+    if standalone_mask.any():
+        # Extrahiere Host-Namen und VM-Anzahl
+        standalone_hosts = df_vHosts[standalone_mask][['Host', '# VMs']].copy()
+        standalone_info = list(standalone_hosts.itertuples(index=False, name=None))
+        return True, standalone_info
+
+    return False, []

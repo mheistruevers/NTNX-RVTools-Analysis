@@ -56,6 +56,21 @@ with upload_filter_section:
 
                     # load excel, filter our relevant tabs and columns, merge all in one dataframe
                     df_vInfo, df_vCPU, df_vMemory, df_vDisk, df_vPartition, df_vHosts, df_vDataStore = custom_functions.get_data_from_excel(uploaded_file)            
+                    
+                    # Prüfe auf Standalone-Hosts (vor der Normalisierung, daher direkt nach Upload)
+                    # Lade Daten erneut NUR für Detection (um Original-Werte zu sehen)
+                    df_vHosts_original = pd.read_excel(uploaded_file, sheet_name='vHost', usecols=['Cluster', 'Host', '# VMs'], engine='openpyxl')
+                    has_standalone, standalone_info = custom_functions.check_standalone_hosts(df_vHosts_original)
+                    
+                    if has_standalone:
+                        st.info(f"ℹ️ **Standalone-Hosts erkannt**: Es wurden {len(standalone_info)} Host(s) ohne Cluster-Zuordnung gefunden. "
+                               f"Diese werden als '[Standalone Hosts]' gruppiert und in die Auswertung einbezogen.")
+                        
+                        # Zeige Details in einem Expander
+                        with st.expander("📋 Details zu Standalone-Hosts anzeigen"):
+                            st.markdown("**Folgende Hosts haben keine Cluster-Zuordnung:**")
+                            for host, vm_count in standalone_info:
+                                st.markdown(f"- **{host}** (VMs: {vm_count})")
 
                     vCluster_selected = st.multiselect(
                         "vCluster selektieren:",
